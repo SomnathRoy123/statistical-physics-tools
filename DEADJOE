@@ -1,0 +1,11 @@
+
+*** These modified files were found in JOE when it aborted on Mon Feb  9 10:02:18 2026
+*** JOE was aborted by UNIX signal 1
+
+*** Datei '(Unbenannt)'
+/usr/local/qpy/bin/qdel
+/home/somnath2/Github Repo/.git/MERGE_MSG
+
+*** Datei '* Startup Log *'
+Bearbeite '/etc/joe/editorrc'...Bearbeite '/etc/joe/ftyperc'...Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/editorrc
