@@ -57,9 +57,13 @@ def _build_parser():
 
 
 def _extract_r_from_filename(file_path):
-    """Extract trailing numeric R value from a filename stem like *_3.3.dat."""
+    """Extract trailing numeric R value from a filename stem like *_R3.3.dat."""
     stem = Path(file_path).stem
     token = stem.split("_")[-1]
+
+    if token.upper().startswith("R"):
+        token = token[1:]
+
     match = re.fullmatch(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", token)
     if match is None:
         return None
@@ -114,7 +118,7 @@ def main():
                 stretched=not args.simple_exp,
             )
 
-            if args.no_dataset_plots is False:
+            if not args.no_dataset_plots:
                 save_dataset_plot(t, c, fit, output_dir / f"{name}.{args.plot_format}", title=name)
 
             if r_value is None:
@@ -141,14 +145,15 @@ def main():
         _write_vs_x_data(results, output_dir / "orientation_corr_vs_x_data.csv")
 
         x_vals = [row["R"] for row in results]
+
         if args.plot_xi_vs_x:
             save_metric_vs_x_plot(
                 x_vals,
                 [row["xi"] for row in results],
                 [row["xi_err"] for row in results],
                 output_dir / f"orientation_corr_xi_vs_x.{args.plot_format}",
-                y_label=r"$\\xi$",
-                title=r"Correlation length $\\xi$ vs $R$",
+                y_label="$\\xi$",
+                title="Correlation length $\\xi$ vs $R$",
             )
 
         if args.plot_tau_O_vs_x:
@@ -157,8 +162,8 @@ def main():
                 [row["tau_O"] for row in results],
                 [row["tau_err"] for row in results],
                 output_dir / f"orientation_corr_tau_O_vs_x.{args.plot_format}",
-                y_label=r"$\\tau_O$",
-                title=r"Orientation relaxation time $\\tau_O$ vs $R$",
+                y_label="$\\tau_O$",
+                title="Orientation relaxation time $\\tau_O$ vs $R$",
             )
 
 

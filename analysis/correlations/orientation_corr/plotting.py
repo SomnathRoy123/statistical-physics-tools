@@ -68,6 +68,8 @@ def save_dataset_plot(t, c, fit, output_path, title=None):
     ax.set_xlabel(r"$t$")
     ax.set_ylabel(r"$C_O(t)$")
 
+    
+
     subtitle = (
         rf"$\tau_O={fit['tau_O']:.3g}\pm{fit['tau_err']:.2g}$, "
         rf"$\xi={fit['xi']:.3g}$, $\beta={fit.get('beta', 1.0):.3g}$"
