@@ -1,6 +1,7 @@
 # fitting.py
 import numpy as np
-from scipy.optimize import curve_fit
+from scipy.optimize import OptimizeWarning, curve_fit
+import warnings
 from scipy.special import gamma, psi
 from models import stretched_exponential, exponential
 
@@ -17,20 +18,33 @@ def compute_tau_O(xi, beta, xi_err, beta_err):
 
 
 def fit_correlation(t, C, stretched=True):
-    if stretched:
-        popt, pcov = curve_fit(
-            stretched_exponential, t, C,
-            p0=[1.0, t.max()/5, 0.8],
-            bounds=([0,0,0.1],[2,np.inf,2]),
-            maxfev=10000
-        )
-        A, xi, beta = popt
-        errors = np.sqrt(np.diag(pcov))
-        return {"A":A,"xi":xi,"beta":beta,
-                "errors":errors,
-                "fit":stretched_exponential(t,*popt)}
-    else:
-        popt, pcov = curve_fit(exponential, t, C, p0=[1.0, t.max()/5])
-        return {"A":popt[0],"xi":popt[1],
-                "errors":np.sqrt(np.diag(pcov)),
-                "fit":exponential(t,*popt)}
+    """Fit orientation correlation with optional stretched exponential model."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", OptimizeWarning)
+
+        if stretched:
+            popt, pcov = curve_fit(
+                stretched_exponential,
+                t,
+                C,
+                p0=[1.0, t.max() / 5, 0.8],
+                bounds=([0, 0, 0.1], [2, np.inf, 2]),
+                maxfev=10000,
+            )
+            A, xi, beta = popt
+            errors = np.sqrt(np.maximum(np.diag(pcov), 0))
+            return {
+                "A": A,
+                "xi": xi,
+                "beta": beta,
+                "errors": errors,
+                "fit": stretched_exponential(t, *popt),
+            }
+
+        popt, pcov = curve_fit(exponential, t, C, p0=[1.0, t.max() / 5], maxfev=10000)
+        return {
+            "A": popt[0],
+            "xi": popt[1],
+            "errors": np.sqrt(np.maximum(np.diag(pcov), 0)),
+            "fit": exponential(t, *popt),
+        }
