@@ -13,7 +13,7 @@ from plotting import save_dataset_plot, save_tau_summary_plot
 def _build_parser():
     parser = argparse.ArgumentParser(description="Orientation correlation analysis")
     parser.add_argument("data_path", help="Path to folder containing .dat files")
-    parser.add_argument("--tmax", type=float, default=None, help="Maximum time for shared grid")
+    parser.add_argument("--tmax", type=float, default=3000, help="Maximum time for shared grid")
     parser.add_argument("--n-grid", type=int, default=500, help="Number of log-spaced grid points")
     parser.add_argument("--col-time", type=int, default=1, help="Time column index")
     parser.add_argument("--col-corr", type=int, default=2, help="Correlation column index")
@@ -30,7 +30,7 @@ def _build_parser():
     parser.add_argument(
         "--plot-format",
         choices=["png", "pdf", "svg"],
-        default="pdf",
+        default="png",
         help="Plot output format (default: pdf for publication workflows)",
     )
     return parser
