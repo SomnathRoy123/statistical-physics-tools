@@ -2,18 +2,19 @@
 
 import argparse
 import glob
+import re
 from pathlib import Path
 
 import numpy as np
 
 from pipeline import process_dataset
-from plotting import save_dataset_plot, save_tau_summary_plot
+from plotting import save_dataset_plot, save_metric_vs_x_plot
 
 
 def _build_parser():
     parser = argparse.ArgumentParser(description="Orientation correlation analysis")
     parser.add_argument("data_path", help="Path to folder containing .dat files")
-    parser.add_argument("--tmax", type=float, default=3000, help="Maximum time for shared grid")
+    parser.add_argument("--tmax", type=float, default=None, help="Maximum time for shared grid")
     parser.add_argument("--n-grid", type=int, default=500, help="Number of log-spaced grid points")
     parser.add_argument("--col-time", type=int, default=1, help="Time column index")
     parser.add_argument("--col-corr", type=int, default=2, help="Correlation column index")
@@ -30,18 +31,61 @@ def _build_parser():
     parser.add_argument(
         "--plot-format",
         choices=["png", "pdf", "svg"],
-        default="png",
+        default="pdf",
         help="Plot output format (default: pdf for publication workflows)",
+    )
+
+    # --- PLOTTING OPTIONS ---
+    parser.add_argument(
+        "--plot-xi-vs-x",
+        action="store_true",
+        default=True,
+        help="Plot xi vs R (enabled by default)",
+    )
+    parser.add_argument(
+        "--plot-tau-O-vs-x",
+        action="store_true",
+        default=False,
+        help="Plot tau_O vs R (disabled by default)",
+    )
+    parser.add_argument(
+        "--no-dataset-plots",
+        action="store_true",
+        help="Disable per-dataset C_O(t) fit plots",
     )
     return parser
 
 
+def _extract_r_from_filename(file_path):
+    """Extract trailing numeric R value from a filename stem like *_R3.3.dat."""
+    stem = Path(file_path).stem
+    token = stem.split("_")[-1]
+
+    if token.upper().startswith("R"):
+        token = token[1:]
+
+    match = re.fullmatch(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", token)
+    if match is None:
+        return None
+    return float(token)
+
+
 def _write_summary(results, output_csv):
-    lines = ["file,tau_O,tau_err,A,xi,beta"]
+    lines = ["file,R,tau_O,tau_err,A,xi,beta"]
     for row in results:
         lines.append(
-            f"{row['name']},{row['tau_O']:.10g},{row['tau_err']:.10g},"
+            f"{row['name']},{row['R']:.10g},{row['tau_O']:.10g},{row['tau_err']:.10g},"
             f"{row['A']:.10g},{row['xi']:.10g},{row['beta']:.10g}"
+        )
+    output_csv.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_vs_x_data(results, output_csv):
+    lines = ["R,xi,xi_err,tau_O,tau_O_err"]
+    for row in results:
+        lines.append(
+            f"{row['R']:.10g},{row['xi']:.10g},{row['xi_err']:.10g},"
+            f"{row['tau_O']:.10g},{row['tau_err']:.10g}"
         )
     output_csv.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -64,6 +108,7 @@ def main():
     results = []
     for file in files:
         name = Path(file).stem
+        r_value = _extract_r_from_filename(file)
         try:
             t, c, fit = process_dataset(
                 file,
@@ -72,14 +117,21 @@ def main():
                 col_corr=args.col_corr,
                 stretched=not args.simple_exp,
             )
-            save_dataset_plot(t, c, fit, output_dir / f"{name}.{args.plot_format}", title=name)
+
+            if not args.no_dataset_plots:
+                save_dataset_plot(t, c, fit, output_dir / f"{name}.{args.plot_format}", title=name)
+
+            if r_value is None:
+                raise ValueError(f"Could not extract trailing R from file name: {Path(file).name}")
 
             result = {
                 "name": name,
+                "R": r_value,
                 "tau_O": fit["tau_O"],
                 "tau_err": fit["tau_err"],
                 "A": fit["A"],
                 "xi": fit["xi"],
+                "xi_err": fit["errors"][1],
                 "beta": fit.get("beta", 1.0),
             }
             results.append(result)
@@ -88,10 +140,31 @@ def main():
             print(f"{name} failed: {exc}")
 
     if results:
+        results = sorted(results, key=lambda item: item["R"])
         _write_summary(results, output_dir / "orientation_corr_summary.csv")
-        save_tau_summary_plot(
-            results, output_dir / f"orientation_corr_tau_summary.{args.plot_format}"
-        )
+        _write_vs_x_data(results, output_dir / "orientation_corr_vs_x_data.csv")
+
+        x_vals = [row["R"] for row in results]
+
+        if args.plot_xi_vs_x:
+            save_metric_vs_x_plot(
+                x_vals,
+                [row["xi"] for row in results],
+                [row["xi_err"] for row in results],
+                output_dir / f"orientation_corr_xi_vs_x.{args.plot_format}",
+                y_label="$\\xi$",
+                title="Correlation length $\\xi$ vs $R$",
+            )
+
+        if args.plot_tau_O_vs_x:
+            save_metric_vs_x_plot(
+                x_vals,
+                [row["tau_O"] for row in results],
+                [row["tau_err"] for row in results],
+                output_dir / f"orientation_corr_tau_O_vs_x.{args.plot_format}",
+                y_label="$\\tau_O$",
+                title="Orientation relaxation time $\\tau_O$ vs $R$",
+            )
 
 
 if __name__ == "__main__":

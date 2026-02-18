@@ -68,6 +68,8 @@ def save_dataset_plot(t, c, fit, output_path, title=None):
     ax.set_xlabel(r"$t$")
     ax.set_ylabel(r"$C_O(t)$")
 
+    
+
     subtitle = (
         rf"$\tau_O={fit['tau_O']:.3g}\pm{fit['tau_err']:.2g}$, "
         rf"$\xi={fit['xi']:.3g}$, $\beta={fit.get('beta', 1.0):.3g}$"
@@ -94,25 +96,18 @@ def save_dataset_plot(t, c, fit, output_path, title=None):
     plt.close(fig)
 
 
-def save_tau_summary_plot(results, output_path):
-    """Save a publication-style summary plot of tau_O across datasets."""
+def save_metric_vs_x_plot(x_values, y_values, y_errors, output_path, y_label, title):
+    """Save generic paper-style metric-vs-x plot with error bars."""
     _apply_paper_style()
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    labels = [result["name"] for result in results]
-    tau = [result["tau_O"] for result in results]
-    tau_err = [result["tau_err"] for result in results]
-
-    fig_width = max(5.6, 0.55 * len(labels))
-    fig, ax = plt.subplots(figsize=(fig_width, 3.9))
-
-    x = list(range(len(labels)))
+    fig, ax = plt.subplots(figsize=(5.4, 3.9))
     ax.errorbar(
-        x,
-        tau,
-        yerr=tau_err,
+        x_values,
+        y_values,
+        yerr=y_errors,
         fmt="o",
         color="#222222",
         ecolor="#222222",
