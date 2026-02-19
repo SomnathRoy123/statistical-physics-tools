@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from pipeline import process_dataset
-from plotting import save_combined_dataset_plot, save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
+from plotting import save_dataset_plot, save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
 
 
 def _build_parser():
@@ -150,15 +150,6 @@ def main():
         results = sorted(results, key=lambda item: item["R"])
         _write_summary(results, output_dir / "orientation_corr_summary.csv")
         _write_vs_x_data(results, output_dir / "orientation_corr_vs_x_data.csv")
-
-
-        if not args.no_dataset_plots and correlation_plot_data:
-            correlation_plot_data = sorted(correlation_plot_data, key=lambda item: item["R"])
-            save_combined_dataset_plot(
-                correlation_plot_data,
-                output_dir / f"orientation_corr_all_vs_time.{args.plot_format}",
-                title="Orientation autocorrelation vs time",
-            )
 
         if args.plot_xi_vs_x:
             save_xi_vs_x_by_r_plot(
