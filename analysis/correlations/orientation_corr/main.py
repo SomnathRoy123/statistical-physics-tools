@@ -6,9 +6,10 @@ import re
 from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt  # Added for the combined plot
 
 from pipeline import process_dataset
-from plotting import save_dataset_plot, save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
+from plotting import save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
 
 
 def _build_parser():
@@ -32,7 +33,7 @@ def _build_parser():
         "--plot-format",
         choices=["png", "pdf", "svg"],
         default="png",
-        help="Plot output format (default: pdf for publication workflows)",
+        help="Plot output format (default: png)",
     )
 
     # --- PLOTTING OPTIONS ---
@@ -51,7 +52,7 @@ def _build_parser():
     parser.add_argument(
         "--no-dataset-plots",
         action="store_true",
-        help="Disable combined C_O(t) vs time plot",
+        help="Disable the combined C_O(t) vs time plot",
     )
     return parser
 
@@ -147,28 +148,39 @@ def main():
             print(f"{name} failed: {exc}")
 
     if results:
+        # Sort everything by R so the plot legend and CSVs are perfectly ordered
         results = sorted(results, key=lambda item: item["R"])
+        correlation_plot_data = sorted(correlation_plot_data, key=lambda item: item["R"])
+        
+        # 1. Save CSV data
         _write_summary(results, output_dir / "orientation_corr_summary.csv")
         _write_vs_x_data(results, output_dir / "orientation_corr_vs_x_data.csv")
 
+        # 2. Combined Dataset Plot (One plot for all C_O(t) vs t)
+        if not args.no_dataset_plots:
+            plt.figure(figsize=(10, 6))
+            for data in correlation_plot_data:
+                plt.plot(data["t"], data["c"], label=f"R = {data['R']}")
+            
+            plt.xscale("log") # Log scale for time is standard for these decays
+            plt.xlabel("Time $t$")
+            plt.ylabel("Orientation Correlation $C_O(t)$")
+            plt.title("Combined Orientation Correlation")
+            # Put legend outside the plot so it doesn't cover data
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') 
+            plt.tight_layout()
+            
+            combined_plot_path = output_dir / f"orientation_corr_combined.{args.plot_format}"
+            plt.savefig(combined_plot_path, dpi=300)
+            plt.close()
+
+        # 3. XI vs R Plot
         if args.plot_xi_vs_x:
             save_xi_vs_x_by_r_plot(
                 results,
                 output_dir / f"orientation_corr_xi_vs_x.{args.plot_format}",
                 x_label="R",
             )
-
-        if args.plot_tau_O_vs_x:
-            x_vals = [row["R"] for row in results]
-            save_metric_vs_x_plot(
-                x_vals,
-                [row["tau_O"] for row in results],
-                [row["tau_err"] for row in results],
-                output_dir / f"orientation_corr_tau_O_vs_x.{args.plot_format}",
-                y_label="$\\tau_O$",
-                title="Orientation relaxation time $\\tau_O$ vs $R$",
-            )
-
 
 if __name__ == "__main__":
     main()
