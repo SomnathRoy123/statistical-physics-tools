@@ -27,9 +27,9 @@ CALCULATE_TAU_O = True
 
 # --- NEW: ACTIVATE PLOTTING OPTIONS ---
 # Set to True to plot the fitted correlation length (ξ) vs. a user-defined x-axis.
-plot_xi_vs_x = False
+plot_xi_vs_x = True
 # Set to True to plot the calculated average time (τO) vs. a user-defined x-axis.
-plot_tau_O_vs_x = True
+plot_tau_O_vs_x = False
 # ---------------------------------------------------
 
 # --- SCRIPT VALIDATION ---
@@ -124,7 +124,11 @@ for dat_file in file_list:
 
         legend_order = int(input(f"  Enter plotting order for '{filename}': ").strip())
         plot_details.append({
-            'path': dat_file, 'label': legend_label, 'color': legend_color, 'order': legend_order
+            'path': dat_file,
+            'label': legend_label,
+            'color': legend_color,
+            'order': legend_order,
+            'R_val': R_val,
         })
     except Exception as e:
         print(f"  Error reading input for {filename}: {e}")
@@ -137,6 +141,7 @@ x_axis_values = []
 xi_values = []
 tau_O_values = []
 tau_O_err_values = []
+r_values = []
 
 if plot_xi_vs_x or plot_tau_O_vs_x:
     print("\nYou have activated secondary plotting (ξ and/or τO vs x-axis).")
@@ -211,6 +216,7 @@ for details in plot_details:
             # Store values for the plots
             if plot_xi_vs_x:
                 xi_values.append(xi_fit_this_loop)
+                r_values.append(details['R_val'])
             if plot_tau_O_vs_x:
                 tau_O_values.append(tau_O_this_loop)
                 tau_O_err_values.append(tau_O_err_this_loop)
@@ -280,16 +286,39 @@ os.makedirs(output_plot_directory, exist_ok=True) # Ensure output directory exis
 if plot_xi_vs_x and xi_values:
     x_plot = np.array(x_axis_values)
     xi_plot = np.array(xi_values)
-    
-    plt.figure(figsize=(10, 6))
-    plt.plot(x_plot, xi_plot, marker='o', linestyle='-')
-    # plt.title("Fitted Correlation Length (\u03BE) vs User-Defined X-Axis")
-    plt.xlabel("Radius of interaction")
-    plt.ylabel("\u03BE (relaxation time)")
-    plt.grid(True, linestyle='--', linewidth=0.5)
+    r_plot = np.array(r_values)
+
+    plt.style.use('seaborn-v0_8-whitegrid')
+    fig, ax = plt.subplots(figsize=(9, 6))
+
+    unique_r = np.unique(r_plot)
+    cmap = plt.cm.viridis(np.linspace(0.15, 0.85, len(unique_r)))
+
+    for color, r_val in zip(cmap, unique_r):
+        mask = r_plot == r_val
+        order = np.argsort(x_plot[mask])
+        ax.plot(
+            x_plot[mask][order],
+            xi_plot[mask][order],
+            marker='o',
+            markersize=7,
+            linewidth=2,
+            color=color,
+            label=f"R = {r_val:g}",
+        )
+
+    ax.set_xlabel("Control Parameter X", fontsize=13)
+    ax.set_ylabel("Correlation Length $\\xi$", fontsize=13)
+    ax.set_title(r"$\\xi$ vs $X$", fontsize=15, pad=10)
+    ax.tick_params(axis='both', which='major', labelsize=11)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.grid(True, which='major', linestyle='--', linewidth=0.7, alpha=0.65)
+    ax.legend(loc='upper right', frameon=True, framealpha=0.95, title=None)
+
     plt.tight_layout()
     output_path = os.path.join(output_plot_directory, 'xi_vs_x.png')
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=600, bbox_inches='tight')
     print(f"ξ vs x-axis plot saved successfully as '{output_path}'")
     plt.show()
 
