@@ -117,12 +117,11 @@ def save_metric_vs_x_plot(x_values, y_values, y_errors, output_path, y_label, ti
         markersize=4.8,
         zorder=4,
     )
-    ax.plot(x, tau, "-", lw=1.0, color="#999999", alpha=0.8, zorder=2)
+    ax.plot(x_values, y_values, "-", lw=1.0, color="#999999", alpha=0.8, zorder=2)
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=35, ha="right")
-    ax.set_ylabel(r"$\tau_O$")
-    ax.set_title("Orientation correlation time across datasets")
+    ax.set_xticks(x_values)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
 
     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
     ax.grid(axis="y", which="major", alpha=0.2, linewidth=0.8)
