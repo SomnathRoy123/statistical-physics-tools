@@ -130,3 +130,53 @@ def save_metric_vs_x_plot(x_values, y_values, y_errors, output_path, y_label, ti
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
+
+
+def save_xi_vs_x_by_r_plot(results, output_path, x_label="R"):
+    """Save a single publication-style ξ-vs-X plot where X-axis values are R."""
+    _apply_paper_style()
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(6.2, 4.4))
+
+    sorted_results = sorted(results, key=lambda row: row["R"])
+    r_vals = [row["R"] for row in sorted_results]
+    xi_vals = [row["xi"] for row in sorted_results]
+    xi_errs = [row["xi_err"] for row in sorted_results]
+
+    cmap = plt.cm.viridis
+    colors = [cmap(0.15 + 0.7 * (idx / max(len(sorted_results) - 1, 1))) for idx in range(len(sorted_results))]
+
+    ax.plot(r_vals, xi_vals, "-", color="#3a3a3a", linewidth=1.4, alpha=0.7, zorder=2)
+
+    for r_val, xi_val, xi_err, color in zip(r_vals, xi_vals, xi_errs, colors):
+        ax.errorbar(
+            [r_val],
+            [xi_val],
+            yerr=[xi_err],
+            fmt="o",
+            color=color,
+            ecolor=color,
+            elinewidth=1.1,
+            capsize=3,
+            capthick=1.0,
+            markersize=5.8,
+            label=f"R = {r_val:g}",
+            zorder=4,
+        )
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(r"$\xi$")
+    ax.set_title(r"Correlation length $\xi$ vs $R$")
+
+    ax.grid(which="major", alpha=0.22, linewidth=0.85)
+    ax.grid(which="minor", alpha=0.08, linewidth=0.5)
+    ax.minorticks_on()
+
+    ax.legend(loc="upper right", frameon=True, framealpha=0.92, edgecolor="#cccccc", title=None)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=600)
+    plt.close(fig)
