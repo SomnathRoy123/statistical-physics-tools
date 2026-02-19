@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from pipeline import process_dataset
-from plotting import save_dataset_plot, save_metric_vs_x_plot
+from plotting import save_dataset_plot, save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
 
 
 def _build_parser():
@@ -56,18 +56,26 @@ def _build_parser():
     return parser
 
 
-def _extract_r_from_filename(file_path):
-    """Extract trailing numeric R value from a filename stem like *_R3.3.dat."""
+def _extract_value_from_filename(file_path, key):
+    """Extract numeric token by key from filenames such as *_R3.3_* or *_X2.1_*."""
     stem = Path(file_path).stem
-    token = stem.split("_")[-1]
+    tokens = re.split(r"[_\-]", stem)
+    number_pattern = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
+    key = key.upper()
 
-    if token.upper().startswith("R"):
-        token = token[1:]
+    for token in tokens:
+        token_upper = token.upper()
+        if token_upper.startswith(key):
+            candidate = token[len(key) :]
+            if re.fullmatch(number_pattern, candidate):
+                return float(candidate)
 
-    match = re.fullmatch(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", token)
-    if match is None:
-        return None
-    return float(token)
+    return None
+
+
+def _extract_r_from_filename(file_path):
+    """Extract R value from a filename token like R3.3."""
+    return _extract_value_from_filename(file_path, "R")
 
 
 def _write_summary(results, output_csv):
@@ -122,7 +130,7 @@ def main():
                 save_dataset_plot(t, c, fit, output_dir / f"{name}.{args.plot_format}", title=name)
 
             if r_value is None:
-                raise ValueError(f"Could not extract trailing R from file name: {Path(file).name}")
+                raise ValueError(f"Could not extract R from file name: {Path(file).name}")
 
             result = {
                 "name": name,
@@ -144,19 +152,15 @@ def main():
         _write_summary(results, output_dir / "orientation_corr_summary.csv")
         _write_vs_x_data(results, output_dir / "orientation_corr_vs_x_data.csv")
 
-        x_vals = [row["R"] for row in results]
-
         if args.plot_xi_vs_x:
-            save_metric_vs_x_plot(
-                x_vals,
-                [row["xi"] for row in results],
-                [row["xi_err"] for row in results],
+            save_xi_vs_x_by_r_plot(
+                results,
                 output_dir / f"orientation_corr_xi_vs_x.{args.plot_format}",
-                y_label="$\\xi$",
-                title="Correlation length $\\xi$ vs $R$",
+                x_label="R",
             )
 
         if args.plot_tau_O_vs_x:
+            x_vals = [row["R"] for row in results]
             save_metric_vs_x_plot(
                 x_vals,
                 [row["tau_O"] for row in results],
