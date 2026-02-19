@@ -71,10 +71,10 @@ def save_dataset_plot(t, c, fit, output_path, title=None):
     
 
     subtitle = (
-        rf"$\tau_O={fit['tau_O']:.3g}\pm{fit['tau_err']:.2g}$, "
-        rf"$\xi={fit['xi']:.3g}$, $\beta={fit.get('beta', 1.0):.3g}$"
+    f"$\\tau_O={fit['tau_O']:.3g}\\pm{fit['tau_err']:.2g}$, "
+    f"$\\xi={fit['xi']:.3g}$, $\\beta={fit.get('beta', 1.0):.3g}$"
     )
-
+    
     ax.set_title(title or "Orientation autocorrelation")
     ax.text(
         0.03,

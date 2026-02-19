@@ -31,7 +31,7 @@ def _build_parser():
     parser.add_argument(
         "--plot-format",
         choices=["png", "pdf", "svg"],
-        default="pdf",
+        default="png",
         help="Plot output format (default: pdf for publication workflows)",
     )
 
