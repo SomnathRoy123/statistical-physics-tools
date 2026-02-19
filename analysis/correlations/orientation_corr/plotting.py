@@ -96,6 +96,45 @@ def save_dataset_plot(t, c, fit, output_path, title=None):
     plt.close(fig)
 
 
+def save_combined_dataset_plot(datasets, output_path, title="Orientation autocorrelation"):
+    """Save all orientation-correlation-vs-time datasets in one publication-style plot."""
+    _apply_paper_style()
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(6.6, 4.8))
+
+    cmap = plt.cm.viridis
+    n = max(len(datasets), 1)
+
+    for idx, data in enumerate(datasets):
+        color = cmap(0.12 + 0.78 * (idx / max(n - 1, 1)))
+        t = data["t"]
+        c = data["c"]
+        fit_curve = data["fit"]["fit"]
+        r_value = data["R"]
+
+        ax.plot(t, c, "o", ms=3.4, mew=0.3, mec="white", alpha=0.35, color=color, zorder=2)
+        ax.plot(t, fit_curve, "-", lw=2.0, color=color, alpha=0.95, label=f"R = {r_value:g}", zorder=3)
+
+    ax.set_xscale("log")
+    ax.xaxis.set_major_locator(LogLocator(base=10, numticks=7))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+    ax.set_xlabel(r"$t$")
+    ax.set_ylabel(r"$C_O(t)$")
+    ax.set_title(title)
+
+    ax.grid(which="major", alpha=0.2, linewidth=0.8)
+    ax.grid(which="minor", alpha=0.08, linewidth=0.5)
+    ax.legend(loc="upper right", frameon=True, framealpha=0.92, edgecolor="#cccccc", title=None)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=600)
+    plt.close(fig)
+
+
 def save_metric_vs_x_plot(x_values, y_values, y_errors, output_path, y_label, title):
     """Save generic paper-style metric-vs-x plot with error bars."""
     _apply_paper_style()

@@ -51,7 +51,7 @@ def _build_parser():
     parser.add_argument(
         "--no-dataset-plots",
         action="store_true",
-        help="Disable per-dataset C_O(t) fit plots",
+        help="Disable combined C_O(t) vs time plot",
     )
     return parser
 
@@ -114,6 +114,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
+    correlation_plot_data = []
     for file in files:
         name = Path(file).stem
         r_value = _extract_r_from_filename(file)
@@ -125,9 +126,6 @@ def main():
                 col_corr=args.col_corr,
                 stretched=not args.simple_exp,
             )
-
-            if not args.no_dataset_plots:
-                save_dataset_plot(t, c, fit, output_dir / f"{name}.{args.plot_format}", title=name)
 
             if r_value is None:
                 raise ValueError(f"Could not extract R from file name: {Path(file).name}")
@@ -143,6 +141,7 @@ def main():
                 "beta": fit.get("beta", 1.0),
             }
             results.append(result)
+            correlation_plot_data.append({"name": name, "R": r_value, "t": t, "c": c, "fit": fit})
             print(f"{name}: tau_O={fit['tau_O']:.6g} ± {fit['tau_err']:.3g}")
         except Exception as exc:
             print(f"{name} failed: {exc}")
