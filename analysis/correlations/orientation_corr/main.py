@@ -6,10 +6,9 @@ import re
 from pathlib import Path
 
 import numpy as np
-import matplotlib.pyplot as plt  # Added for the combined plot
 
 from pipeline import process_dataset
-from plotting import save_metric_vs_x_plot, save_xi_vs_x_by_r_plot
+from plotting import save_combined_dataset_plot, save_xi_vs_x_by_r_plot
 
 
 def _build_parser():
@@ -158,21 +157,11 @@ def main():
 
         # 2. Combined Dataset Plot (One plot for all C_O(t) vs t)
         if not args.no_dataset_plots:
-            plt.figure(figsize=(10, 6))
-            for data in correlation_plot_data:
-                plt.plot(data["t"], data["c"], label=f"R = {data['R']}")
-            
-            plt.xscale("log") # Log scale for time is standard for these decays
-            plt.xlabel("Time $t$")
-            plt.ylabel("Orientation Correlation $C_O(t)$")
-            plt.title("Combined Orientation Correlation")
-            # Put legend outside the plot so it doesn't cover data
-            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') 
-            plt.tight_layout()
-            
-            combined_plot_path = output_dir / f"orientation_corr_combined.{args.plot_format}"
-            plt.savefig(combined_plot_path, dpi=300)
-            plt.close()
+            save_combined_dataset_plot(
+                correlation_plot_data,
+                output_dir / f"orientation_corr_combined.{args.plot_format}",
+                title="Combined Orientation Correlation",
+            )
 
         # 3. XI vs R Plot
         if args.plot_xi_vs_x:
